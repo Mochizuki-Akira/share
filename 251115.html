@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>班课记录生成器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f7f9fb;
+      --card:#fff;
+      --text:#2c3e50;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --primary:#2563eb;
+      --primary-hover:#1d4ed8;
+    }
+    *{box-sizing:border-box}
+    body {
+      font-family: 'Microsoft YaHei', system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", sans-serif;
+      padding: 24px;
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+    .container{max-width: 920px; margin: 0 auto;}
+    h2 {
+      color: var(--text);
+      margin: 6px 0 16px;
+      font-size: 1.6rem;
+    }
+
+    /* 卡片 */
+    .card{
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.04);
+    }
+
+    /* 表单布局与元素 */
+    .form-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 16px;
+    }
+    @media (max-width: 720px){
+      .form-grid{ grid-template-columns: 1fr; }
+      body{ padding: 16px; }
+    }
+    label { display:block; font-size:.95rem; color:var(--text); }
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      margin-top:6px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      font-size:14px;
+      color:var(--text);
+    }
+
+    /* 按钮与输出 */
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 6px; }
+    button.action{
+      padding:10px 16px; font-size:14px; border-radius:10px;
+      border:1px solid var(--primary); background:var(--primary); color:#fff; cursor:pointer;
+      transition: transform .02s ease, background .2s ease;
+    }
+    button.action:hover{ background: var(--primary-hover); }
+    button.action.secondary{ background:#fff; color:var(--primary); }
+    button.action:active{ transform: translateY(1px); }
+
+    #classOutput {
+      margin-top: 18px;
+      white-space: pre-wrap;
+      background: #fff;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 100%;
+      min-height: 80px;
+    }
+
+    small.hint{ color:var(--muted); display:block; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>班课记录生成器</h2>
+
+    <!-- 班课上课记录 -->
+    <div id="classPanel">
+      <div class="card">
+        <div class="form-grid">
+          <div>
+            <label>课程日期：
+              <input type="date" id="classDate">
+            </label>
+          </div>
+
+          <div>
+            <label>授课老师：
+              <select id="classTeacher">
+                <option value="藏晓凤">藏晓凤</option>
+              </select>
+            </label>
+          </div>
+
+          <div style="grid-column: 1 / -1;">
+            <label>授课内容：
+              <textarea id="classContent" rows="3" placeholder="请输入本次授课内容"></textarea>
+            </label>
+          </div>
+
+          <div style="grid-column: 1 / -1;">
+            <label>下节课内容：
+              <textarea id="classNext" rows="3" placeholder="请输入下节课计划内容"></textarea>
+            </label>
+          </div>
+
+          <div style="grid-column: 1 / -1;">
+            <label>作业：
+              <textarea id="classHomework" rows="3" placeholder="请输入作业要求"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="action" onclick="generateClassRecord()">生成班课记录</button>
+          <button class="action secondary" onclick="copyClassOutput()">复制</button>
+        </div>
+
+        <div id="classOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 默认日期为今天
+    window.addEventListener("DOMContentLoaded", () => {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const ymd = `${yyyy}-${mm}-${dd}`;
+      const date2 = document.getElementById("classDate");
+      if (date2) date2.value = ymd;
+    });
+
+    // 生成班课记录
+    function generateClassRecord() {
+      const ymd = document.getElementById('classDate').value; // yyyy-mm-dd
+      const [yy, mo, dd] = ymd ? ymd.split("-") : ["", "", ""];
+      const dateDot = ymd ? `${yy}.${mo}.${dd}` : "";
+
+      const teacher = document.getElementById('classTeacher').value;
+      const content = (document.getElementById('classContent').value || '').trim();
+      const next = (document.getElementById('classNext').value || '').trim();
+      const hw = (document.getElementById('classHomework').value || '').trim();
+
+      const text = `课程反馈\n${dateDot}\n授课老师：${teacher}\n授课内容：${content}\n下节课内容：${next}\n作业：${hw}`;
+
+      document.getElementById('classOutput').innerText = text;
+      navigator.clipboard.writeText(text).then(()=> {
+        showToast("✅ 已经自动复制以下内容啦！");
+      }).catch(()=> {
+        showToast("⚠️ 复制失败：请手动复制");
+      });
+    }
+
+    function copyClassOutput() {
+      const content = document.getElementById("classOutput").innerText;
+      if (content.trim()) {
+        navigator.clipboard.writeText(content).then(() => {
+          showToast("✅ 内容已复制到剪贴板");
+        }).catch(()=> {
+          showToast("⚠️ 复制失败：请手动复制");
+        });
+      } else {
+        showToast("⚠️ 没有内容可复制");
+      }
+    }
+
+    function showToast(message) {
+      const existing = document.querySelector('.custom-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement("div");
+      toast.textContent = message;
+      toast.className = "custom-toast";
+
+      Object.assign(toast.style, {
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        backgroundColor: "#323232",
+        color: "#fff",
+        padding: "16px 24px",
+        fontSize: "16px",
+        textAlign: "center",
+        borderRadius: "8px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+        zIndex: "10000",
+        opacity: "0",
+        transition: "opacity 0.3s ease",
+        maxWidth: "80%",
+        wordBreak: "break-word"
+      });
+
+      document.body.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+      });
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
